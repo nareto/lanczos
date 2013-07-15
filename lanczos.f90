@@ -2,13 +2,14 @@ PROGRAM lanczos
   IMPLICIT NONE
   INTEGER, PARAMETER :: dp=KIND(0.d0), ndiprova = 5
   INTEGER :: i
-  INTEGER, PARAMETER :: dim = 10
-  REAL(dp), DIMENSION(dim, dim) ::  T
+  INTEGER, PARAMETER :: dim = 1000
+  REAL(dp), DIMENSION(dim) ::  D
+  REAL(dp), DIMENSION(dim - 1) ::  U
   !INTEGER, DIMENSION(N,N) :: A
   REAL(dp), DIMENSION(ndiprova) :: v
   REAL(dp), DIMENSION(ndiprova - 1) :: w
   !for LAPACK's dsyevr
-  character :: JOBZ = 'N', RANGE = 'A', UPLO = 'U'
+  character :: JOBZ = 'N', RANGE = 'A'
   real(dp) :: VL, VU !lower and upper bounds of wanted eigenvalues - used if RANGE = 'V'
   integer :: IL, IU !lower and upper index (ascending order) of wanted eigenvalues - used if RANGE = 'I'
   real(dp) :: ABSTOL = 0.001 !tolerance on approximation error of eigenvalues
@@ -17,8 +18,9 @@ PROGRAM lanczos
   real(dp) :: Z !not referenced if JOBZ='N'
   integer, dimension(2*dim) :: ISUPPZ
   !integer :: LWORK = -1, LIWORK = -1
-  integer :: LWORK = 300, LIWORK = 10*dim
-  real(dp), dimension(:), allocatable :: WORK, IWORK
+  integer :: LWORK, LIWORK
+  real(dp), dimension(:), allocatable :: WORK
+  integer, dimension(:), allocatable :: IWORK
   integer :: INFO
 
   !do i = 1, ndiprova - 1
@@ -29,10 +31,18 @@ PROGRAM lanczos
   !
   !call tridiag(T, v, w, ndiprova)
   !call m_print(T)
+  
+  call lanczos_naive(dim, D, U)
+  if (RANGE == 'I') then
+     TOT_EGV = IU - IL +1
+  end if
+  allocate(WORK(1), IWORK(1))
+  call dstevr(JOBZ, RANGE, dim, D, U, VL, VU, IL, IU, ABSTOL, TOT_EGV, EGV, Z, dim, ISUPPZ, WORK, -1, IWORK, -1,INFO)
+  LWORK = WORK(1)
+  LIWORK = IWORK(1)
+  deallocate(WORK, IWORK)
   allocate(WORK(LWORK), IWORK(LIWORK))
-  call lanczos_naive(dim, T)
-  call dsyevr(JOBZ, RANGE, UPLO, dim, T, dim, VL, VU, IL, IU, ABSTOL, TOT_EGV, EGV, Z, dim, ISUPPZ, WORK, LWORK, IWORK, LIWORK,INFO)
-  !write(*,*), INFO, WORK(1), IWORK(1)
+  call dstevr(JOBZ, RANGE, dim, D, U, VL, VU, IL, IU, ABSTOL, TOT_EGV, EGV, Z, dim, ISUPPZ, WORK, LWORK, IWORK, LIWORK,INFO)
 
   call compare_egv(EGV, dim)
 
@@ -118,34 +128,32 @@ PROGRAM lanczos
     return
   END SUBROUTINE prodotto
 
-  SUBROUTINE lanczos_naive(dim, T)
+  SUBROUTINE lanczos_naive(dim, D, U) !dimension, diagonal and upper diagonal of resulting symmetric tridiagonal matrix
     INTEGER :: i, j, dim
     INTEGER, PARAMETER :: dp=KIND(0.d0)
     REAL(dp), DIMENSION(dim,dim) :: Q, T
-    REAL(dp), DIMENSION(dim) :: rnd, tmp, alfa, r
-    real(dp), dimension(dim-1) :: beta
+    REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r
+    real(dp), dimension(dim-1) :: U
 
     call random_seed
     call random_number(rnd)
     Q(:,1) = rnd/NORM2(rnd)
     
     call prodotto(Q(:,1), dim, tmp)
-    alfa(1) = dot_product(Q(:,1), tmp)
-    r = tmp - alfa(1)*Q(:,1)
-    beta(1) = norm2(r)
-    Q(:,2) = r/beta(1)
+    D(1) = dot_product(Q(:,1), tmp)
+    r = tmp - D(1)*Q(:,1)
+    U(1) = norm2(r)
+    Q(:,2) = r/U(1)
     do i=2, dim
        call prodotto(Q(:,i), dim, tmp)
-       alfa(i) = dot_product(Q(:,i), tmp)
-       r = tmp - alfa(i)*Q(:,i) - beta(i-1)*Q(:,i-1)
+       D(i) = dot_product(Q(:,i), tmp)
+       r = tmp - D(i)*Q(:,i) - U(i-1)*Q(:,i-1)
        if (i < dim) then
-          beta(i) = norm2(r)
-          Q(:,i+1) = r/beta(i)
+          U(i) = norm2(r)
+          Q(:,i+1) = r/U(i)
        end if
     end do
 
-    call tridiag(T, alfa, beta, dim)
-       
   END SUBROUTINE lanczos_naive
 
 
