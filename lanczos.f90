@@ -1,113 +1,66 @@
 PROGRAM lanczos
   IMPLICIT NONE
   INTEGER, PARAMETER :: dp=KIND(0.d0), ndiprova = 5
-  INTEGER :: i
-  INTEGER, PARAMETER :: dim = 1000
-  REAL(dp), DIMENSION(dim) ::  D
+  INTEGER :: i, extreme =3 !how many extreme eigenvalues to print
+  INTEGER, PARAMETER :: dim = 10.e3
+  REAL(dp), DIMENSION(dim) ::  D, eig
   REAL(dp), DIMENSION(dim - 1) ::  U
-  !INTEGER, DIMENSION(N,N) :: A
-  REAL(dp), DIMENSION(ndiprova) :: v
-  REAL(dp), DIMENSION(ndiprova - 1) :: w
-  !for LAPACK's dsyevr
-  character :: JOBZ = 'N', RANGE = 'A'
-  real(dp) :: VL, VU !lower and upper bounds of wanted eigenvalues - used if RANGE = 'V'
-  integer :: IL, IU !lower and upper index (ascending order) of wanted eigenvalues - used if RANGE = 'I'
-  real(dp) :: ABSTOL = 0.001 !tolerance on approximation error of eigenvalues
-  integer :: TOT_EGV = dim !total number of eigenvalues found
-  real(dp), dimension(dim) :: EGV !eigenvalues
-  real(dp) :: Z !not referenced if JOBZ='N'
-  integer, dimension(2*dim) :: ISUPPZ
-  !integer :: LWORK = -1, LIWORK = -1
-  integer :: LWORK, LIWORK
-  real(dp), dimension(:), allocatable :: WORK
-  integer, dimension(:), allocatable :: IWORK
-  integer :: INFO
 
-  !do i = 1, ndiprova - 1
-  !   v(i) = real(i)
-  !   w(i) = real(5)
-  !end do
-  !v(ndiprova) = ndiprova
-  !
-  !call tridiag(T, v, w, ndiprova)
-  !call m_print(T)
-  
   call lanczos_naive(dim, D, U)
-  if (RANGE == 'I') then
-     TOT_EGV = IU - IL +1
-  end if
-  allocate(WORK(1), IWORK(1))
-  call dstevr(JOBZ, RANGE, dim, D, U, VL, VU, IL, IU, ABSTOL, TOT_EGV, EGV, Z, dim, ISUPPZ, WORK, -1, IWORK, -1,INFO)
-  LWORK = WORK(1)
-  LIWORK = IWORK(1)
-  deallocate(WORK, IWORK)
-  allocate(WORK(LWORK), IWORK(LIWORK))
-  call dstevr(JOBZ, RANGE, dim, D, U, VL, VU, IL, IU, ABSTOL, TOT_EGV, EGV, Z, dim, ISUPPZ, WORK, LWORK, IWORK, LIWORK,INFO)
-
-  call compare_egv(EGV, dim)
+  call eigenvalues(D, U, eig, dim)
+  call compare_egv(eig, extreme, dim)
 
   CONTAINS
 
-    subroutine m_print(A)
-      INTEGER, PARAMETER :: dp=KIND(0.d0)
-      real(dp), dimension(:,:), intent(in) :: A
-      integer :: m, n, i, j
-      m=size(A,dim=1)
-      n=size(A,dim=2)
-      do i=1,m
-         print "(9f10.4)", (A(i,j),j=1,n)
-      end do
-      print *
-    end subroutine m_print
-
-    subroutine compare_egv(egv, dim)
+    subroutine compare_egv(egv, extreme, dim)
     INTEGER, PARAMETER :: dp=KIND(0.d0)
-    INTEGER :: i, dim
+    INTEGER :: i, dim, extreme
     REAL(dp), DIMENSION(dim) :: egv
     real(dp) :: pi = acos(-1.0), correctegv
 
-    do i=1, dim
-       !print "(9f10.4)", (2+2* cos(pi *(real(i)/real((dim+1)))))**2, "(9f10.4)", egv(i)
-       !print "(9f10.6)", real(2**4)
-       correctegv = (2+2* cos(pi *(real(i)/real((dim+1)))))**2
-       write(*,*), correctegv, egv(dim - i +1), correctegv - egv(dim - i +1)
+    write(*,"(A16, A16, A16)"), "Correct", "Approximation", "Relative Error"
+    do i=1, extreme
+       correctegv = (2+2* cos(pi *(real(dim -i +1)/real((dim+1)))))**2
+       write(*,"(E16.8E2, E16.8E2, E16.8E2)"), correctegv, egv(i), (correctegv - egv(i))/correctegv
+    end do
+    write(*,*), "...."
+    do i=dim-extreme+1, dim
+       correctegv = (2+2* cos(pi *(real(dim -i +1)/real((dim+1)))))**2
+       write(*,"(E16.8E2, E16.8E2, E16.8E2)"), correctegv, egv(i), (correctegv - egv(i))/correctegv
     end do
 
     end subroutine compare_egv
 
-  SUBROUTINE tridiag(T, D, U, dim) !creates symmetric tridiagonal matrix (stores in T) from vectors D (diagonal) and U (upper diagonal) of dimension dim and dim-1
-    IMPLICIT NONE
-    INTEGER, PARAMETER :: dp=KIND(0.d0)
-    INTEGER :: i, j, dim
-    REAL(dp), DIMENSION(dim,dim) :: T
-    REAL(dp), DIMENSION(dim) :: D
-    REAL(dp), DIMENSION(dim - 1) :: U
+    subroutine eigenvalues(d, u, eig, dim)
+      !for LAPACK's dsyevr
+      implicit none
+      integer :: dim
+      character :: JOBZ = 'N', RANGE = 'A'
+      real(dp) :: VL, VU !lower and upper bounds of wanted eigenvalues - used if RANGE = 'V'
+      integer :: IL, IU !lower and upper index (ascending order) of wanted eigenvalues - used if RANGE = 'I'
+      real(dp) :: ABSTOL = 0.001 !tolerance on approximation error of eigenvalues
+      real(dp), dimension(dim):: eig, d !array with eigenvalues, diagonal
+      real(dp), dimension(dim - 1):: u !upper diagonal
+      real(dp), dimension(:), allocatable :: Z !not referenced if JOBZ='N'
+      integer, dimension(2*dim) :: ISUPPZ
+      integer :: LWORK, LIWORK
+      real(dp), dimension(:), allocatable :: WORK
+      integer, dimension(:), allocatable :: IWORK
+      integer :: INFO, M
 
-    T(1,1) = D(1)
-    T(1,2) = U(1)
-    do j=3, dim
-       T(1,j) = 0
-    end do
-    do i =2, dim-1 !righe
-       do j=1, i-2
-          T(i,j) = 0
-       end do
-       T(i,i-1) = U(i-1) 
-       T(i,i) = D(i)
-       T(i,i+1) = U(i)
-       do j=i+2, dim
-          T(i,j) = 0
-       end do
-    end do
-    do j=1, dim-2
-       T(dim,j) = 0
-    end do
-    T(dim,dim-1) = U(dim-1)
-    T(dim,dim) = D(dim)
-  END SUBROUTINE tridiag
+      allocate(WORK(1), IWORK(1))
+      call dstevr(JOBZ, RANGE, dim, d, u, VL, VU, IL, IU, ABSTOL, dim, eig,Z, dim,ISUPPZ,WORK, -1, IWORK, -1,INFO)
+      LWORK = WORK(1)
+      LIWORK = IWORK(1)
+      deallocate(WORK, IWORK)
+      allocate(WORK(LWORK), IWORK(LIWORK))
+      call dstevr(JOBZ, RANGE, dim, d, u, VL, VU,IL,IU,ABSTOL,M,eig,Z,dim,ISUPPZ,WORK,LWORK,IWORK,LIWORK,INFO)
+      deallocate(WORK, IWORK)
 
-  SUBROUTINE prodotto(invec, dim, outvec)
-    !calcola outvec=A invec
+      
+    end subroutine eigenvalues
+
+  SUBROUTINE prodotto(invec, dim, outvec) !calcola outvec=A invec
     IMPLICIT NONE
     INTEGER, PARAMETER :: dp=KIND(0.d0)
     INTEGER :: dim, i
