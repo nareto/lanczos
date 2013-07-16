@@ -2,34 +2,42 @@ PROGRAM lanczos
   IMPLICIT NONE
   INTEGER, PARAMETER :: dp=KIND(0.d0), ndiprova = 5
   INTEGER :: i, extreme =3 !how many extreme eigenvalues to print
-  INTEGER, PARAMETER :: dim = 10.e3
+  INTEGER, PARAMETER :: dim = 1.e2
   REAL(dp), DIMENSION(dim) ::  D, eig
   REAL(dp), DIMENSION(dim - 1) ::  U
 
   call lanczos_naive(dim, D, U)
-  call eigenvalues(D, U, eig, dim)
-  call compare_egv(eig, extreme, dim)
+  !call compute_lanczos(dim, D, U)
+  !call eigenvalues(D, U, eig, dim)
+  !call compare_egv(eig, extreme, dim)
 
   CONTAINS
+    
+    real function correctegv(i)
+      implicit none
+      integer :: i
+      INTEGER, PARAMETER :: dp=KIND(0.d0)
+      real(dp) :: pi = acos(-1.0)
+      correctegv = (2+2* cos(pi *(real(dim -i +1)/real((dim+1)))))**2
+      return
+    end function correctegv
 
     subroutine compare_egv(egv, extreme, dim)
-    INTEGER, PARAMETER :: dp=KIND(0.d0)
-    INTEGER :: i, dim, extreme
-    REAL(dp), DIMENSION(dim) :: egv
-    real(dp) :: pi = acos(-1.0), correctegv
+      implicit none
+      INTEGER, PARAMETER :: dp=KIND(0.d0)
+      INTEGER :: i, dim, extreme
+      REAL(dp), DIMENSION(dim) :: egv
+      real(dp) :: pi = acos(-1.0)
 
-    write(*,"(A16, A16, A16)"), "Correct", "Approximation", "Relative Error"
-    do i=1, extreme
-       correctegv = (2+2* cos(pi *(real(dim -i +1)/real((dim+1)))))**2
-       write(*,"(E16.8E2, E16.8E2, E16.8E2)"), correctegv, egv(i), (correctegv - egv(i))/correctegv
+      write(*,"(A16, A16, A16)"), "Correct", "Approximation", "Relative Error"
+      do i=1, extreme
+         write(*,"(E16.8E2, E16.8E2, E16.8E2)"), correctegv(i), egv(i), (correctegv(i) - egv(i))/correctegv(i)
+      end do
+      write(*,*), "...."
+      do i=dim-extreme+1, dim
+       write(*,"(E16.8E2, E16.8E2, E16.8E2)"), correctegv(i), egv(i), (correctegv(i) - egv(i))/correctegv(i)
     end do
-    write(*,*), "...."
-    do i=dim-extreme+1, dim
-       correctegv = (2+2* cos(pi *(real(dim -i +1)/real((dim+1)))))**2
-       write(*,"(E16.8E2, E16.8E2, E16.8E2)"), correctegv, egv(i), (correctegv - egv(i))/correctegv
-    end do
-
-    end subroutine compare_egv
+  end subroutine compare_egv
 
     subroutine eigenvalues(d, u, eig, dim)
       !for LAPACK's dsyevr
@@ -56,8 +64,6 @@ PROGRAM lanczos
       allocate(WORK(LWORK), IWORK(LIWORK))
       call dstevr(JOBZ, RANGE, dim, d, u, VL, VU,IL,IU,ABSTOL,M,eig,Z,dim,ISUPPZ,WORK,LWORK,IWORK,LIWORK,INFO)
       deallocate(WORK, IWORK)
-
-      
     end subroutine eigenvalues
 
   SUBROUTINE prodotto(invec, dim, outvec) !calcola outvec=A invec
@@ -73,20 +79,61 @@ PROGRAM lanczos
     end do
     outvec(dim-1) = invec(dim-3) + 4*invec(dim-2) + 6*invec(dim-1) + 4*invec(dim)
     outvec(dim) = invec(dim-2) + 4*invec(dim-1) + 5*invec(dim)
-
-    !stampa
-    !do i = 1, dim
-    !   write(*,*) y(i)
-    !end do
     return
   END SUBROUTINE prodotto
+
+  SUBROUTINE compute_lanczos(dim, D, U) !dimension, diagonal and upper diagonal of resulting symmetric tridiagonal matrix
+    INTEGER :: i, j, dim
+    INTEGER, PARAMETER :: dp=KIND(0.d0)
+    real(dp) :: t, eps = 0
+    REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r, eig, dtmp, v, w
+    real(dp), dimension(dim-1) :: U, utmp
+
+    open(unit=4, file="eigv.txt")
+    call random_seed
+    call random_number(rnd)
+    v = rnd/NORM2(rnd)
+    w = 0
+    u(1) = 1
+
+    !write(4,*), 0, abs(correctegv(dim) - d(1)), abs(correctegv(dim - 1) - d(1)),&
+    !        abs(correctegv(2) - d(1)), abs(correctegv(1) - d(1))
+
+    do i=1, dim
+       if (abs(u(i)) <= eps) then
+          exit
+       end if
+       if (i>1) then
+          do j=1, dim
+             t = v(j)
+             v(j) = w(j)/u(i)
+             w(j) = -u(i) * t
+          end do
+       end if
+       call prodotto(v, dim, tmp)
+       w = tmp + w
+       D(i) = dot_product(v,w)
+       w = w - d(i)*v
+       if (i < dim) then
+          U(i) = norm2(w)
+       end if
+       dtmp = d
+       utmp = u
+       call eigenvalues(dtmp(1:i), utmp(1:i), eig, i)
+       !call compare_egv(eig, 5, dim)
+       write(*,*), eig(i)
+       write(4,*), i-1, abs(correctegv(dim) - eig(i)), abs(correctegv(dim-1) - eig(i-1)),&
+            abs(correctegv(2) - eig(2)), abs(correctegv(1) - eig(1))
+    end do
+  END SUBROUTINE compute_lanczos
 
   SUBROUTINE lanczos_naive(dim, D, U) !dimension, diagonal and upper diagonal of resulting symmetric tridiagonal matrix
     INTEGER :: i, j, dim
     INTEGER, PARAMETER :: dp=KIND(0.d0)
     REAL(dp), DIMENSION(dim,dim) :: Q, T
-    REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r
-    real(dp), dimension(dim-1) :: U
+    REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r, dtmp
+    real(dp), dimension(dim-1) :: U, utmp
+    open(unit=4, file="eigv.txt")
 
     call random_seed
     call random_number(rnd)
@@ -94,6 +141,9 @@ PROGRAM lanczos
     
     call prodotto(Q(:,1), dim, tmp)
     D(1) = dot_product(Q(:,1), tmp)
+    write(4,*), 0, abs(correctegv(dim) - d(1)), abs(correctegv(dim-1) - d(1)),&
+         abs(correctegv(2) - d(1)), abs(correctegv(1) - d(1))
+    
     r = tmp - D(1)*Q(:,1)
     U(1) = norm2(r)
     Q(:,2) = r/U(1)
@@ -105,9 +155,12 @@ PROGRAM lanczos
           U(i) = norm2(r)
           Q(:,i+1) = r/U(i)
        end if
+       dtmp = d
+       utmp = u
+       call eigenvalues(dtmp(1:i), utmp(1:i), eig, i)
+       write(4,*), i-1, abs(correctegv(dim) - eig(i)), abs(correctegv(dim-1) - eig(i-1)),&
+            abs(correctegv(2) - eig(2)), abs(correctegv(1) - eig(1))
     end do
-
   END SUBROUTINE lanczos_naive
-
 
 END PROGRAM lanczos
