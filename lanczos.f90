@@ -2,7 +2,7 @@ PROGRAM lanczos
   IMPLICIT NONE
   INTEGER, PARAMETER :: dp=KIND(0.d0), ndiprova = 5
   INTEGER :: i, extreme =3 !how many extreme eigenvalues to print
-  INTEGER, PARAMETER :: dim = 1.e1
+  INTEGER, PARAMETER :: dim = 1.e2
   REAL(dp), DIMENSION(dim) ::  D, eig
   REAL(dp), DIMENSION(dim - 1) ::  U
 
@@ -110,11 +110,12 @@ PROGRAM lanczos
           U(i) = norm2(r)
           Q(:,i+1) = r/U(i)
        end if
+       write(*,*), d
        dtmp = d
        utmp = u
        call eigenvalues(dtmp(1:i), utmp(1:i), eig, i)
-       write(4,*), i-1, abs(correctegv(dim) - eig(i)), abs(correctegv(dim-1) - eig(i-1)),&
-            abs(correctegv(2) - eig(2)), abs(correctegv(1) - eig(1))
+       !write(4,*), i-1, abs(correctegv(dim) - eig(i)), abs(correctegv(dim-1) - eig(i-1)),&
+       !     abs(correctegv(2) - eig(2)), abs(correctegv(1) - eig(1))
     end do
   END SUBROUTINE lanczos_naive
 
@@ -130,21 +131,27 @@ PROGRAM lanczos
     call random_number(rnd)
     v = rnd/NORM2(rnd)
     w = 0
-    do i=1, dim
+    do i=1, dim 
        call prodotto(v, dim, tmp)
        D(i) = dot_product(v, tmp)
-       r = tmp - D(i)*v - U(i)*w
+       r = tmp - D(i)*v - U(i-1)*w
        if (i < dim) then
           U(i) = norm2(r)
+          if (U(i) == 0) then
+             exit
+          end if
           z = r/U(i)
        end if
-       v = z
        w = v
+       v = z
+       !write(*,*), d !d(i), eig(i)
        dtmp = d
        utmp = u
        call eigenvalues(dtmp(1:i), utmp(1:i), eig, i)
+       !write(*,*), eig
        write(4,*), i-1, abs(correctegv(dim) - eig(i)), abs(correctegv(dim-1) - eig(i-1)),&
             abs(correctegv(2) - eig(2)), abs(correctegv(1) - eig(1))
+       !write(4,*), i-1, correctegv(dim), eig(1)
     end do
   END SUBROUTINE compute_lanczos
 
