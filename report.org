@@ -1,3 +1,4 @@
+* Prima versione
 * Autovalori della tridiagonale
 
 [[http://www.netlib.org/lapack/explore-html/d9/d45/dstevr_8f.html#][DSTEVR]]
