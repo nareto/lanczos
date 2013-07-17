@@ -1,13 +1,13 @@
 PROGRAM lanczos
   IMPLICIT NONE
   INTEGER, PARAMETER :: dp=KIND(0.d0), ndiprova = 5
-  INTEGER :: i,j, iterations, extreme = 3 !how many extreme eigenvalues to print
-  INTEGER, PARAMETER :: dim = 1.e3
+  INTEGER :: i,j, iterations
+  INTEGER, PARAMETER :: dim = 1.e5
   REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r, dtmp, v, w, z, eig
   real(dp), dimension(dim-1) :: U, utmp
 
   iterations = 100
-  open(unit=4, file="eigv.txt")
+  open(unit=4, file="errors.txt")
   call random_seed
   call random_number(rnd)
   v = rnd/NORM2(rnd)
@@ -25,14 +25,17 @@ PROGRAM lanczos
      end if
      w = v
      v = z
-     !write(*,*), d !d(i), eig(i)
      dtmp = d
      utmp = u
      call eigenvalues(dtmp(1:i), utmp(1:i), eig, i)
-     !write(*,*), eig
-     write(4,*), i-1, abs(correctegv(dim) - eig(i)), abs(correctegv(dim-1) - eig(i-1)),&
-          abs(correctegv(2) - eig(2)), abs(correctegv(1) - eig(1))
-     !write(4,*), i-1, correctegv(dim), eig(1)
+     if (i > 1) then
+        write(4,"(I4)", advance = "no") i
+        do j=0, 3 !first and last 4 eigenvalues
+           write(4, "(F12.9 A)", advance="no") abs(correctegv(j+1) - eig(j+1)), " "
+           write(4, "(F12.9 A)", advance="no") abs(correctegv(dim-j) - eig(i-j)), " "
+        end do
+        write(4,*)
+     end if
   end do
 
   CONTAINS
@@ -70,7 +73,7 @@ PROGRAM lanczos
     character :: JOBZ = 'N', RANGE = 'A'
     real(dp) :: VL, VU !lower and upper bounds of wanted eigenvalues - used if RANGE = 'V'
     integer :: IL, IU !lower and upper index (ascending order) of wanted eigenvalues - used if RANGE = 'I'
-    real(dp) :: ABSTOL = 0.001 !tolerance on approximation error of eigenvalues
+    real(dp) :: ABSTOL = 1.e-5 !tolerance on approximation error of eigenvalues
     real(dp), dimension(dim):: eig, d !array with eigenvalues, diagonal
     real(dp), dimension(dim - 1):: u !upper diagonal
     real(dp), dimension(:), allocatable :: Z !not referenced if JOBZ='N'
