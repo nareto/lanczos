@@ -2,16 +2,17 @@ PROGRAM lanczos
   IMPLICIT NONE
   INTEGER, PARAMETER :: dp=KIND(0.d0), ndiprova = 5
   INTEGER :: i,j, iterations, extreme = 3 !how many extreme eigenvalues to print
-  INTEGER, PARAMETER :: dim = 1.e2
+  INTEGER, PARAMETER :: dim = 1.e3
   REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r, dtmp, v, w, z, eig
   real(dp), dimension(dim-1) :: U, utmp
-  open(unit=4, file="eigv.txt")
 
+  iterations = 100
+  open(unit=4, file="eigv.txt")
   call random_seed
   call random_number(rnd)
   v = rnd/NORM2(rnd)
   w = 0
-  do i=1, dim 
+  do i=1, iterations
      call prodotto(v, dim, tmp)
      D(i) = dot_product(v, tmp)
      r = tmp - D(i)*v - U(i-1)*w
