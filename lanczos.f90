@@ -1,13 +1,19 @@
 PROGRAM lanczos
   IMPLICIT NONE
   INTEGER, PARAMETER :: dp=KIND(0.d0), ndiprova = 5
-  INTEGER :: i,j, iterations
-  INTEGER, PARAMETER :: dim = 1.e5
+  INTEGER :: i,j, iterations = 10, tot_eigv = 4, step = 3
+  INTEGER, PARAMETER :: dim = 1.e1
   REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r, dtmp, v, w, z, eig
   real(dp), dimension(dim-1) :: U, utmp
 
-  iterations = 100
   open(unit=4, file="errors.txt")
+  open(unit=5, file="eigv.txt")
+  open(unit=6, file="correcteigv.txt")
+  write(6,*) "#Correct eigenvalues:"
+  do j=1,dim
+     write(6,*) correctegv(j)
+  end do
+  write(5,*) "#Approximated eigenvalues"
   call random_seed
   call random_number(rnd)
   v = rnd/NORM2(rnd)
@@ -28,14 +34,25 @@ PROGRAM lanczos
      dtmp = d
      utmp = u
      call eigenvalues(dtmp(1:i), utmp(1:i), eig, i)
-     if (i > 1) then
-        write(4,"(I4)", advance = "no") i
-        do j=0, 3 !first and last 4 eigenvalues
-           write(4, "(F12.9 A)", advance="no") abs(correctegv(j+1) - eig(j+1)), " "
-           write(4, "(F12.9 A)", advance="no") abs(correctegv(dim-j) - eig(i-j)), " "
-        end do
-        write(4,*)
-     end if
+     write(5,"(I4 A)", advance = "no") i, " " 
+     do j=1, i
+        if (mod(j,2)==0) then
+           write(5,"(F12.9 A)", advance="no") eig(i-(j/2)+1), " "
+        else
+           write(5, "(F12.9 A)", advance="no") eig(ceiling(real(j)/2.0)), " "
+        end if
+     end do
+     write(4,*)
+     !write(5,"(I4 A)", advance = "no") i, " "
+     !do j=i, 1, -step
+     !!do j=1, i
+     !write(4, "(F12.9 A)", advance="no") abs(correctegv(j) - eig(j)), " "
+     !write(4, "(F12.9 A)", advance="no") abs(correctegv(dim-j+1) - eig(i-j+1)), " "
+     !   write(5, "(F12.9 A)", advance="no") eig(j), " "
+     !   !write(5, "(F12.9 A)", advance="no") eig(i-j+1), " "
+     !end do
+     write(5,*)
+     
   end do
 
   CONTAINS
