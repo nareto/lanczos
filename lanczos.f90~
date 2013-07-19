@@ -1,9 +1,0 @@
-PROGRAM lanczos
-IMPLICIT NONE
-INTEGER :: m
-
-m = 2
-
-write(*,m)
-
-END PROGRAM lanczos
