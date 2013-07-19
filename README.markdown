@@ -6,4 +6,8 @@ It is a simple fortran program to verify that the Lanczos method works: the matr
 
 To run the program:
 
-	gfortran lanczos.f90 -llapack -o lanczos && ./lanczos  && gnuplot plot.gp
+	gfortran lanczos.f90 -llapack -o lanczos && ./lanczos  && gnuplot plot-eigv.gp
+
+or
+
+	gfortran lanczos.f90 -llapack -o lanczos && ./lanczos  && gnuplot plot-err.gp	

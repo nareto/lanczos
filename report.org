@@ -1,42 +1,189 @@
-* Prima versione
-#+begin_src fortran
-SUBROUTINE lanczos_naive(dim, D, U) !dimension, diagonal and upper diagonal of resulting symmetric tridiagonal matrix
-  INTEGER :: i, dim
-  INTEGER, PARAMETER :: dp=KIND(0.d0)
-  REAL(dp), DIMENSION(dim,dim) :: Q
-  REAL(dp), DIMENSION(dim) :: rnd, tmp, D, r, dtmp
-  real(dp), dimension(dim-1) :: U, utmp
-  open(unit=4, file="eigv.txt")
+#+TITLE: Progetto per l'esame di Calcolo Scientifico
+#+AUTHOR: Renato Budinich
+#+SETUPFILE:/home/renato/Documents/org/latex_header.org
+#+latex_header: \usepackage{algorithm}
+#+latex_header: \usepackage{algpseudocode}
+#+options: TOC:nil
+* Descrizione del progetto
+Il metodo di Lanczos, applicato a una matrice hermitiana $A \in \mathbb{C}^{n\times n}$ con autovalori $\lambda_1\leq \ldots \leq \lambda_n$, fornisce al generico passo $k=1, \ldots, n$ una matrice tridiagonale $T_k \in \mathbb{C}^{k \times k}$ con autovalori $\mu_1^{(k)} \leq \ldots \leq \mu_k^{(k)}$. Gli autovalori estremi di $T_k$ convergono a quegli estremi di $A$, con velocità via via peggiore come ci si allontana dalle estremità ($\mu_{k-1}^{(k)}$ e $\mu_2^{(k)}$ convergono a $\lambda_{n-1}$ e $\lambda_2$ più lentamente di quanto $\mu_k^{(k)}$ e $\mu_1^{(k)}$ convergano a $\lambda_n$ e $\lambda_1$).
 
-  call random_seed
-  call random_number(rnd)
-  Q(:,1) = rnd/NORM2(rnd)
-  
-  call prodotto(Q(:,1), dim, tmp)
-  D(1) = dot_product(Q(:,1), tmp)
-  write(4,*), 0, abs(correctegv(dim) - d(1)), abs(correctegv(dim-1) - d(1)),&
-       abs(correctegv(2) - d(1)), abs(correctegv(1) - d(1))
-  
-  r = tmp - D(1)*Q(:,1)
-  U(1) = norm2(r)
-  Q(:,2) = r/U(1)
-  do i=2, dim
-     call prodotto(Q(:,i), dim, tmp)
-     D(i) = dot_product(Q(:,i), tmp)
-     r = tmp - D(i)*Q(:,i) - U(i-1)*Q(:,i-1)
-     if (i < dim) then
-        U(i) = norm2(r)
-        Q(:,i+1) = r/U(i)
-     end if
-     write(*,*), d
-     dtmp = d
-     utmp = u
-     call eigenvalues(dtmp(1:i), utmp(1:i), eig, i)
-     !write(4,*), i-1, abs(correctegv(dim) - eig(i)), abs(correctegv(dim-1) - eig(i-1)),&
-     !     abs(correctegv(2) - eig(2)), abs(correctegv(1) - eig(1))
-  end do
-END SUBROUTINE lanczos_naive
+Lo scopo del progetto era verificare questa convergenza sulla matrice 
+
+\begin{align*}
+A \defi
+\begin{bmatrix}
+5 & 4 & 1 & & 0\\
+4 & 6 & \ddots & \ddots & \\
+1 & \ddots & \ddots & \ddots & 1\\
+& \ddots & \ddots & 6 & 4  \\
+0 & & 1 & 4 & 5
+\end{bmatrix}
+\end{align*}
+
+che è il quadrato della matrice
+
+\begin{align*}
+\begin{bmatrix}
+2 & 1 & & 0\\
+1 & \ddots & \ddots & \\
+& \ddots & \ddots & 1 \\
+0 & & 1 & 2
+\end{bmatrix}
+\end{align*}
+
+e della quale si conosce quindi l'espressione esplicita per gli autovalori
+
+\begin{align}
+\label{lambda}
+\lambda_j = (2 + 2 \cos(\pi \frac{n+1-j}{n+1}))^2 \quad j=1,2, \ldots, n
+\end{align}
+
+che rende facile la verifica del metodo.
+
+* L'algoritmo e l'implementazione
+Il metodo di Lanczos fornisce delle relazioni ricorsive per gli autovettori $q_k, \, k=1, \ldots, n$ di $A$, per il vettore diagonale e per quello sopradiagonale (rispettivamente $\alpha$ e $\beta$) di $T_n$:
+
+\begin{align}
+\label{relaz}
+\left\{
+\begin{array}{ll}
+q_{k+1} &= \frac{Aq_k -\alpha_k q_k - \beta_{k-1}q_{k-1}}{\beta_k} \\
+q_1 &= q \\
+q_0 &= 0
+\end{array}
+\right.
+\quad \left\{
+\begin{array}{ll}
+\alpha_k &= q_k \cdot A q_k \\
+\beta_k &= \norm{Aq_k -\alpha_k q_k - \beta_{k-1}q_{k-1}}
+\end{array}
+\right.
+k=1, \ldots, n
+\end{align}
+dove $q$ è un vettore qualunque di norma $1$, e nel caso $\beta_k$ sia uguale a $0$, per $q_{k+1}$ basta scegliere un vettore ortogonale a $q_1,\ldots, q_k$.
+Gli autovalori della matrice 
+
+\begin{align*}
+T_n = \begin{bmatrix}
+\alpha_1 & \beta_1 & & 0\\
+\beta_1 & \ddots & \ddots & \\
+& \ddots & \ddots & \beta_{n-1} \\
+0 & & \beta_{n-1} & \alpha_n
+\end{bmatrix}
+\end{align*}
+
+così ottenuta sono in teoria esattamente gli autovalori di $A$; in realtà a causa degli errori numerici saranno delle approssimazioni. Solitamente il metodo viene usato come metodo iterativo, sfruttando la proprietà di convergenza già accennata: ci si ferma all'iterazione $K$ e si usano gli autovalori estremi di $T_K$ come approssimazione di quelli di $A$.
+
+\begin{algorithm} 
+\caption{}
+\label{algo}
+\begin{algorithmic}
+\State $q_0 \gets 0$
+\State $q_1 \gets$ vettore random di norma $1$
+\For{$k=1,\ldots,K$}
+\State $t \gets A q_k$
+\State $\alpha_k \gets q_k \cdot t$
+\State $r \gets t - \alpha_k q_k - \beta_{k-1}q_{k-1}$
+\If{$k<n$}
+\State $\beta_{k} \gets \norm{r}$
+\If{$\beta_k \neq 0$}
+\State $q_{k+1} \gets \frac{r}{\beta_k}$
+\Else 
+\State break
+\EndIf
+\EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+Dalle relazioni (\ref{relaz}) si ricava l'algoritmo (\ref{algo}), il cui costo dominante è la moltiplicazione matrice per vettore $A q_k$, che nel nostro caso ha complessità $\mathcal{O}(n)$, quindi l'algoritmo globalmente ha complessità temporale $\mathcal{O}(nK)$, dove $K$ è il numero di iterazioni effettuate.
+
+La complessità in memoria dell'algoritmo è $\mathcal{O}(nK)$, perchè bisogna memorizzare la matrice $Q$ degli autovettori; siccome questi non interessavano, ho usato invece l'algoritmo (\ref{algo2}) che ha complessità in memoria $\mathcal{O}(K)$.
+
+\begin{algorithm}[H]
+\caption{}
+\label{algo2}
+\begin{algorithmic}
+\State $w \gets 0$
+\State $v \gets$ vettore random di norma $1$
+\For{$k=1,\ldots,K$}
+\State $t \gets A v$
+\State $\alpha_k \gets v \cdot t$
+\State $r \gets t - \alpha_k v - \beta_{k-1}w$
+\If{$k<n$}
+\State $\beta_{k} \gets \norm{r}$
+\If{$\beta_k \neq 0$}
+\State $z \gets \frac{r}{\beta_k}$
+\State $w \gets v$
+\State $v \gets z$
+\Else 
+\State break
+\EndIf
+\EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+** Codice sorgente 
+Segue l'implementazione in Fortran dell'algoritmo. Ho usato la subroutine [[http://www.netlib.org/lapack/explore-html/d9/d45/dstevr_8f.html#][DSTEVR]] di LAPACK per calcolare ad ogni passo gli autovalori di $T_k$. Nell'algoritmo ad ogni iterazione controllo se $\beta(k) < \epsilon$, costante fissata inizialmente, per evitare problemi di instabilità numerica; si veda ad esempio la figura (\ref{epsilon_piccolo}), dove $\epsilon$ è stato fissato abbastanza piccolo da non entrare mai nel ramo dell' ~if~ che interrompe il ciclo iterativo - vengono svolte quindi tutte le $K$ iterazioni, e si vede che da una certa iterazione in poi gli errori di alcuni autovalori più interni cominciano ad aumentare. Invece ponendo $\epsilon = 1$ l'iterazione si ferma prima di tale fenomeno (che ho riscontrato sperimentalmente in molte altre istanze) fornendo un'approssimazione migliore di quegli autovalori.
+
+#+caption: errori per $n=45, K=45, \epsilon=10^{-3}$
+#+label: epsilon_piccolo
+[[./img/errors_n45K45eps-3.png]]
+
+#+caption: errori per $n=45, K=45, \epsilon=1$
+#+label: epsilon_grande
+[[./img/errors_n45K45eps0.png]]
+
+
+* Utilizzo del programma e interpretazione dell'output
+Il programma chiede in input $n$ e il numero di iterazioni $K$ da effettuare, e fornisce in output tre file:
+
+\begin{description}
+\item[correcteigv.txt] contiene gli $n$ autovalori di $A$ in ordine crescente, uno per riga, calcolati usando la (\ref{lambda})
+\item[eigv.txt] c'è una riga per ogni iterazione effettuata; la prima colonna è l'indice $k$ dell'iterazione, quelle successive sono gli autovalori di $T_k$, ordinati in questo modo: $\mu_k^{(k)}, \mu_1^{(k)}, \mu_{k-1}^{(k)}, \mu_2^{(k)}, \ldots$.
+\item[errors.txt] anche qui la prima colonna è l'indice $k$ dell'iterazione, quelle successive invece sono le differenze in valore assoluto tra gli autovalori corretti e quelli approssimati, con lo stesso ordine del file precedente, ovvero: $|\lambda_n - \mu_k^{(k)}|, |\lambda_1 - \mu_1^{(k)}|, |\lambda_{n-1} - \mu_{k-1}^{(k)}|, |\lambda_2 - \mu_2^{(k)}|, \ldots$
+\end{description}
+
+Questi file vengono poi utilizzati dagli script ~gnuplot~ ~plot-eigv.gp~ e ~plot-err.gp~ per produrre dei grafici rispettivamente della convergenza e degli errori commessi, al crescere delle iterazioni. 
+
+Per eseguire il programma e visualizzare il grafico degli errori si può ad esempio dare il commando:
+#+begin_src bash
+$ gfortran lanczos.f90 -llapack -o lanczos && ./lanczos && gnuplot plot-err.gp
+#+end_src
+
+Per il grafico della convergenza degli autovalori (che è utile solo per valori piccoli di $n$) basta sostituire ~plot-eigv.gp~ a ~plot-err.gp~ nel commando sopra.
+
+Nelle figure sono riportati alcuni esempi dei grafici prodotti per diversi valori di $n$ e $K$.
+
+#+caption: convergenza degli autovalori per $n = K = 15$
+[[file:img/eigv_n15K15.png]]
+
+#+caption: convergenza degli autovalori per $n = 30, K = 20$
+[[file:img/eigv_n30K20.png]]
+
+#+CAPTION: errori per $n=20, K=20$
+[[./img/errors_n20K20.png]]
+
+#+caption: errori per $n=100, K=30$
+[[./img/errors_n100K30.png]]
+
+#+caption: errori per $n=100, K=30$ in scala logaritmica
+[[./img/errors_n100K30_log.png]]
+
+#+caption: errori per $n=10^6, K=100$
+[[./img/errors_n10^6K100.png]]
+
+#+caption: errori per $n=10^6, K=100$ in scala logaritmica
+[[./img/errors_n10^6K100_log.png]]
+
+
+
+* Commenti
+Dai grafici degli errori si nota come la convergenza sia effettivamente più rapida sugli autovalori estremi e come le velocità di convergenza siano accoppiate, tra il primo e l'ultimo autovalore, il secondo e il penultimo e via così.
+
+Per $n = 10^6$, $K=200$ il mio computer desktop (processore intel i5 2500k, 8gb di RAM) impiega
+
+#+begin_src bash
+$ time
 #+end_src 
-* Autovalori della tridiagonale
-
-[[http://www.netlib.org/lapack/explore-html/d9/d45/dstevr_8f.html#][DSTEVR]]
