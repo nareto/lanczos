@@ -1,4 +1,4 @@
-% Created 2013-07-19 Fri 12:44
+% Created 2013-07-19 Fri 13:14
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -12,7 +12,7 @@
 \usepackage{latexsym}
 \usepackage{hyperref}
 \tolerance=1000
-\usepackage[italian, english]{babel}
+\usepackage[italian]{babel}
 \usepackage[usenames, dvipsnames]{xcolor}
 \usepackage{minted}
 \usepackage{amsmath}
@@ -26,53 +26,10 @@
 %\selectbiblanguage{italian}
 \DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it} %serve per \mathcpz
 \numberwithin{equation}{subsection}
-\newtheorem{teor}[equation]{Teorema}
-\newtheorem{prop}[equation]{Proposizione}
-\newtheorem{lem}[equation]{Lemma}
-\newtheorem{deff}[equation]{Definizione}
-\newtheorem{cor}[equation]{Corollario}
-\newtheorem*{oss}{Osservazione}
-\newtheorem*{es}{Esempio}
-\newtheorem{ez}[equation]{Esercizio}
-\newcommand{\imp}[1]{{\color{red}\underline{$\bigstar$ {\color{black}#1}}}}
-\newtheorem{teor+}[equation]{\imp{Teorema}}
-\newtheorem{prop+}[equation]{\imp{Proposizione}}
-\newtheorem{lem+}[equation]{\imp{Lemma}}
-\newtheorem{deff+}[equation]{\imp{Definizione}}
-\newtheorem{cor+}[equation]{\imp{Corollario}}
-\newtheorem*{oss+}{\imp{Osservazione}}
-\newtheorem*{es+}{\imp{Esempio}}
-\newtheorem{ez+}[equation]{\imp{Esercizio}}
-\newtheoremstyle{connome}{}{}{\itshape}{}{\bfseries}{.}{.5em}{\thmname{#3} \thmnumber{#2}}
-\theoremstyle{connome}
-\newtheorem{teorconnome}[equation]{Teorema}
-\newtheoremstyle{connomesenzanumero}{}{}{\itshape}{}{\bfseries}{.}{.5em}{\thmname{#3}}
-\theoremstyle{connomesenzanumero}
-\newtheorem*{nota}{Nota}
-\newtheoremstyle{connome+}{}{}{\itshape}{}{\bfseries}{.}{.5em}{\imp{\thmname{#3}} \thmnumber{#2}}
-\theoremstyle{connome+}
-\newtheorem{teorconnome+}[equation]{Teorema}
-\newtheoremstyle{connomesenzanumero+}{}{}{\itshape}{}{\bfseries}{.}{.5em}{\imp{\thmname{#3}}}
-\theoremstyle{connomesenzanumero+}
-%\newtheorem{teorconnomesenzanumero}[equation]{Teorema}
-\newtheorem*{nota+}{Nota}
-%max min sup inf
-\newcommand{\mmis}[2]{\ensuremath{\underaccent{#2}{\mbox{#1}\,\,}}}
-\renewcommand{\max}[1]{\mmis{max}{#1}}
-\renewcommand{\min}[1]{\mmis{min}{#1}}
-\renewcommand{\sup}[1]{\mmis{sup}{#1}}
-\renewcommand{\inf}[1]{\mmis{inf}{#1}}
-\renewcommand{\lim}[1]{\mmis{lim}{#1}}
-\renewcommand{\liminf}[1]{\mmis{liminf}{#1}}
-\renewcommand{\limsup}[1]{\mmis{limsup}{#1}}
+
 %altro
-\newcommand{\mapstounderset}[4]{\ensuremath{\underset{#3}{#1}\underset{\mapsto}{\longrightarrow}\underset{#4}{#2}}}
-\newcommand{\prs}[1]{\ensuremath{\left( #1 \right)}}
-\renewcommand{\qedsymbol}{$\blacksquare$}
-\renewcommand{\complement}{\ensuremath{^{\mathcal{C}}}}
 \newcommand{\defi}{\ensuremath{\stackrel{\mbox{\scriptsize{\textit{def}}}}{=}}}
 \newcommand{\norm}[1]{\ensuremath{\left|\left|#1\right|\right|}}
-\newcommand{\nterm}[1]{\index{#1}{\color{ForestGreen}\textbf{\emph{\underline{#1}}}}}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \author{Renato Budinich}
@@ -87,7 +44,7 @@
 \maketitle
 \section{Descrizione del progetto}
 \label{sec-1}
-Il metodo di Lanczos, applicato a una matrice hermitiana $A \in \mathbb{C}^{n\times n}$ con autovalori $\lambda_1\leq \ldots \leq \lambda_n$, fornisce al generico passo $k=1, \ldots, n$ una matrice tridiagonale $T_k \in \mathbb{C}^{k \times k}$ con autovalori $\mu_1^{(k)} \leq \ldots \leq \mu_k^{(k)}$. Gli autovalori estremi di $T_k$ convergono a quegli estremi di $A$, con velocità via via peggiore come ci si allontana dalle estremità ($\mu_{k-1}^{(k)}$ e $\mu_2^{(k)}$ convergono a $\lambda_{n-1}$ e $\lambda_2$ più lentamente di quanto $\mu_k^{(k)}$ e $\mu_1^{(k)}$ convergano a $\lambda_n$ e $\lambda_1$).
+Il metodo di Lanczos, applicato ad una matrice hermitiana $A \in \mathbb{C}^{n\times n}$ con autovalori $\lambda_1\leq \ldots \leq \lambda_n$, fornisce al generico passo $k=1, \ldots, n$ una matrice tridiagonale $T_k \in \mathbb{C}^{k \times k}$ con autovalori $\mu_1^{(k)} \leq \ldots \leq \mu_k^{(k)}$. Gli autovalori estremi di $T_k$ convergono a quelli estremi di $A$, con velocità via via minore come ci si allontana dalle estremità ($\mu_{k-1}^{(k)}$ e $\mu_2^{(k)}$ convergono a $\lambda_{n-1}$ e $\lambda_2$ più lentamente di quanto $\mu_k^{(k)}$ e $\mu_1^{(k)}$ convergano a $\lambda_n$ e $\lambda_1$).
 
 Lo scopo del progetto era verificare questa convergenza sulla matrice 
 
@@ -239,8 +196,8 @@ PROGRAM lanczos
   READ(*,*) iterations
   iterations = min(iterations,n)
 
-  ALLOCATE(rnd(n),t(n),alfa(iterations),r(n),v(n),w(n),z(n), &
-       eig(iterations),beta(iterations),beta_tmp(n),alfa_tmp(n))
+  ALLOCATE(rnd(n),t(n),alfa(iterations),beta(iterations),r(n),&
+       v(n),w(n),z(n),eig(iterations),alfa_tmp(n),beta_tmp(n))
 
   OPEN(unit=4, file="errors.txt")
   OPEN(unit=5, file="eigv.txt")
@@ -270,9 +227,13 @@ PROGRAM lanczos
      END IF
      w = v
      v = z
+
+     !la seguente subroutine scrive in eig i k autovalori di T_k
+     !siccome DSTEVR, la routine di LAPACK utilizzata, potrebbe moltiplicare
+     !i vettori diagonali e sopradiagonali per evitare instabilita' numerica,
+     !gliene passo delle copie per lasciare i vettori alfa e beta inalterati
      alfa_tmp = alfa
      beta_tmp = beta
-
      CALL eigenvalues(alfa_tmp(1:k), beta_tmp(1:k), eig, k)
 
      WRITE(5,"(I4 A)", advance = "no") k, " " 
@@ -333,9 +294,11 @@ CONTAINS
     implicit none
     INTEGER :: n
     CHARACTER :: JOBZ = 'N', RANGE = 'A'
-    !lower and upper bounds of wanted eigenvalues - used IF RANGE = 'V':
+    !lower and upper bounds of wanted eigenvalues 
+    !used only IF RANGE = 'V':
     REAL(dp) :: VL, VU 
-    !lower and upper index (ascending order) of wanted eigenvalues - used IF RANGE = 'I':
+    !lower and upper index (ascending order) of wanted eigenvalues
+    !used only IF RANGE = 'I':
     INTEGER :: IL, IU 
     REAL(dp) :: ABSTOL = 1.e-5 !tolerance on approximation error of eigenvalues
     REAL(dp), dimension(n):: eig, d !array with eigenvalues, diagonal
@@ -360,9 +323,9 @@ CONTAINS
   END SUBROUTINE eigenvalues
 END PROGRAM lanczos
 \end{minted}
-\section{Utilizzo del programma e interpretazione dell'output}
+\section{Utilizzo del programma ed interpretazione dell'output}
 \label{sec-3}
-Il programma chiede in input $n$ e il numero di iterazioni $K$ da effettuare, e fornisce in output tre file:
+Il programma chiede in input $n$ ed il numero di iterazioni $K$ da effettuare, e fornisce in output tre file:
 
 \begin{description}
 \item[correcteigv.txt] contiene gli $n$ autovalori di $A$ in ordine crescente, uno per riga, calcolati usando la (\ref{lambda})
@@ -372,65 +335,65 @@ Il programma chiede in input $n$ e il numero di iterazioni $K$ da effettuare, e 
 
 Questi file vengono poi utilizzati dagli script \verb~gnuplot~ \verb~plot-eigv.gp~ e \verb~plot-err.gp~ per produrre dei grafici rispettivamente della convergenza e degli errori commessi, al crescere delle iterazioni. 
 
-Per eseguire il programma e visualizzare il grafico degli errori si può ad esempio dare il commando:
+Per eseguire il programma e visualizzare il grafico degli errori si può ad esempio dare il comando:
 \begin{minted}[]{bash}
 $ gfortran lanczos.f90 -llapack -o lanczos && ./lanczos && gnuplot plot-err.gp
 \end{minted}
 
-Per il grafico della convergenza degli autovalori (che è utile solo per valori piccoli di $n$) basta sostituire \verb~plot-eigv.gp~ a \verb~plot-err.gp~ nel commando sopra. In questo grafico le linee rosse sono le rette $y = \lambda_j, j=1, \ldots, n$.
+Per il grafico della convergenza degli autovalori (che è utile solo per valori piccoli di $n$) basta sostituire \verb~plot-eigv.gp~ a \verb~plot-err.gp~ nel comando sopra. In questo grafico le linee rosse sono le rette $y = \lambda_j, j=1, \ldots, n$.
 
 Nelle figure sono riportati alcuni esempi dei grafici prodotti per diversi valori di $n$ e $K$.
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=.9\linewidth]{img/eigv_n15K15.png}
+\includegraphics[scale=0.65]{img/eigv_n15K15.png}
 \caption{Convergenza degli autovalori per $n = K = 15$}
 \end{figure}
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=.9\linewidth]{img/eigv_n30K20.png}
+\includegraphics[scale=0.65]{img/eigv_n30K20.png}
 \caption{Convergenza degli autovalori per $n = 30, K = 20$}
 \end{figure}
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=.9\linewidth]{./img/errors_n20K20.png}
+\includegraphics[scale=0.65]{./img/errors_n20K20.png}
 \caption{Errori per $n=20, K=20$}
 \end{figure}
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=.9\linewidth]{./img/errors_n100K30.png}
+\includegraphics[scale=0.65]{./img/errors_n100K30.png}
 \caption{Errori per $n=100, K=30$}
 \end{figure}
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=.9\linewidth]{./img/errors_n100K30_log.png}
+\includegraphics[scale=0.65]{./img/errors_n100K30_log.png}
 \caption{Errori per $n=100, K=30$ in scala logaritmica}
 \end{figure}
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=.9\linewidth]{./img/errors_n10^6K100.png}
+\includegraphics[scale=0.65]{./img/errors_n10^6K100.png}
 \caption{\label{errori_ngrande}Errori per $n=10^6, K=100$}
 \end{figure}
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=.9\linewidth]{./img/errors_n10^6K100_log.png}
+\includegraphics[scale=0.65]{./img/errors_n10^6K100_log.png}
 \caption{Errori per $n=10^6, K=100$ in scala logaritmica}
 \end{figure}
 
 
 \section{Commenti}
 \label{sec-4}
-Dai grafici degli errori si nota come la convergenza sia effettivamente più rapida sugli autovalori estremi e come le velocità di convergenza siano accoppiate, tra il primo e l'ultimo autovalore, il secondo e il penultimo e via così.
+Dai grafici degli errori si nota come la convergenza sia effettivamente più rapida sugli autovalori estremi e come le velocità di convergenza siano accoppiate, tra il primo e l'ultimo autovalore, il secondo ed il penultimo e via così.
 
-Dalla figura (\ref{errori_ngrande}) si nota che per $n=10^6$, con circa $10$ iterazioni si ha già una buona approssimazione della prima coppia di autovalori (il primo e l'ultimo), e in $100$ iterazioni le prime $5$ coppie hanno una buona approssimazione.
+Dalla figura (\ref{errori_ngrande}) si nota che per $n=10^6$, con circa $10$ iterazioni si ha già una buona approssimazione della prima coppia di autovalori (il primo e l'ultimo), e con $100$ iterazioni le prime $5$ coppie hanno una buona approssimazione.
 
-In tabella (\ref{tempi}) ci sono i tempi d'esecuzione di alcune istanze del programma, eseguiti su un computer desktop con processore intel i5 2500k, 8gb di RAM e sistema Archlinux (kernel $3.9.9$). Per queste prove i valori di \verb~n~ e \verb~iterations~ sono stati dichiarati direttamente nel codice e il tempo è dato dal commando \verb~time~.
+In tabella (\ref{tempi}) ci sono i tempi d'esecuzione di alcune istanze del programma, eseguiti su un computer desktop con processore intel i5 2500k, 8gb di RAM e sistema Archlinux (kernel $3.9.9$). Per queste prove i valori di \verb~n~ e \verb~iterations~ sono stati dichiarati direttamente nel codice ed il tempo d'esecuzione è dato dal comando \verb~time~.
 
 \begin{table}[htb]
 \caption{\label{tempi}Tempi di esecuzione}
